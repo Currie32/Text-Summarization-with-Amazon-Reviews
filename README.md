@@ -15,3 +15,5 @@ Here are some examples of reviews and their generated summaries:
 
 - Description(3): love individual oatmeal cups found years ago sam quit selling sound big lots quit selling found target expensive buy individually trilled get entire case time go anywhere need water microwave spoon know quaker flavor packets
 - Summary(3): love it
+
+I wrote an [article](https://medium.com/@Currie32/text-summarization-with-amazon-reviews-41801c2210b) about this project that explains parts of it in detail.
