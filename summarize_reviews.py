@@ -23,7 +23,6 @@ import re
 from nltk.corpus import stopwords
 import time
 from tensorflow.python.layers.core import Dense
-from tensorflow.python.ops.rnn_cell_impl import _zero_state_tensors
 print('TensorFlow Version: {}'.format(tf.__version__))
 
 
@@ -247,7 +246,7 @@ print("Size of Vocabulary:", len(word_counts))
 # Load Conceptnet Numberbatch's (CN) embeddings, similar to GloVe, but probably better 
 # (https://github.com/commonsense/conceptnet-numberbatch)
 embeddings_index = {}
-with open('/Users/Dave/Desktop/Programming/numberbatch-en-17.02.txt', encoding='utf-8') as f:
+with open('numberbatch-en.txt', encoding='utf-8') as f:
     for line in f:
         values = line.split(' ')
         word = values[0]
@@ -520,7 +519,7 @@ def training_decoding_layer(dec_embed_input, summary_length, dec_cell, initial_s
                                                        initial_state,
                                                        output_layer) 
 
-    training_logits, _ = tf.contrib.seq2seq.dynamic_decode(training_decoder,
+    training_logits, *_ = tf.contrib.seq2seq.dynamic_decode(training_decoder,
                                                            output_time_major=False,
                                                            impute_finished=True,
                                                            maximum_iterations=max_summary_length)
@@ -544,7 +543,7 @@ def inference_decoding_layer(embeddings, start_token, end_token, dec_cell, initi
                                                         initial_state,
                                                         output_layer)
                 
-    inference_logits, _ = tf.contrib.seq2seq.dynamic_decode(inference_decoder,
+    inference_logits, *_ = tf.contrib.seq2seq.dynamic_decode(inference_decoder,
                                                             output_time_major=False,
                                                             impute_finished=True,
                                                             maximum_iterations=max_summary_length)
@@ -574,14 +573,12 @@ def decoding_layer(dec_embed_input, embeddings, enc_output, enc_state, vocab_siz
                                                   normalize=False,
                                                   name='BahdanauAttention')
 
-    dec_cell = tf.contrib.seq2seq.DynamicAttentionWrapper(dec_cell,
+    dec_cell = tf.contrib.seq2seq.AttentionWrapper(dec_cell,
                                                           attn_mech,
                                                           rnn_size)
             
-    initial_state = tf.contrib.seq2seq.DynamicAttentionWrapperState(enc_state[0],
-                                                                    _zero_state_tensors(rnn_size, 
-                                                                                        batch_size, 
-                                                                                        tf.float32)) 
+    initial_state = dec_cell.zero_state(batch_size, tf.float32)
+
     with tf.variable_scope("decode"):
         training_logits = training_decoding_layer(dec_embed_input, 
                                                   summary_length, 
@@ -756,7 +753,7 @@ update_loss = 0
 batch_loss = 0
 summary_update_loss = [] # Record the update losses for saving improvements in the model
 
-checkpoint = "best_model.ckpt" 
+checkpoint = "./best_model.ckpt"
 with tf.Session(graph=train_graph) as sess:
     sess.run(tf.global_variables_initializer())
     
@@ -845,8 +842,6 @@ def text_to_seq(text):
 random = np.random.randint(0,len(clean_texts))
 input_sentence = clean_texts[random]
 text = text_to_seq(clean_texts[random])
-
-checkpoint = "./best_model.ckpt"
 
 loaded_graph = tf.Graph()
 with tf.Session(graph=loaded_graph) as sess:
